@@ -377,7 +377,9 @@ class App:
         ):
             ttk.Label(hk, text=label).grid(row=r, column=0, sticky="w")
             v = tk.StringVar()
-            ttk.Combobox(hk, textvariable=v, values=HOTKEY_CHOICES, width=12).grid(row=r, column=1, sticky="w", padx=4)
+            cb = ttk.Combobox(hk, textvariable=v, values=HOTKEY_CHOICES, width=12)
+            cb.grid(row=r, column=1, sticky="w", padx=4)
+            cb.bind("<<ComboboxSelected>>", lambda e: self._save())
             self.v_hk[name] = v
         ttk.Label(hk, text="Аварийная остановка: увести курсор в левый верхний угол экрана.", style="Hint.TLabel").grid(
             row=3, column=0, columnspan=2, sticky="w", pady=(4, 0))
@@ -528,7 +530,8 @@ class App:
                 w, h = max(1, round(w * k)), max(1, round(h * k))
             self.v_w.set(w)
             self.v_h.set(h)
-        self.v_mode.set("image")
+        if not keep_size:  # пользователь сам выбрал файл — значит, рисуем картинку
+            self.v_mode.set("image")
         self._refresh_preview()
 
     def _orig_size(self):
