@@ -1,0 +1,58 @@
+name: Build WplaceBot.exe
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q xvfb
+          pip install -r requirements.txt pytest
+      - name: Tests
+        run: xvfb-run -a python -m pytest -q
+
+  build-windows:
+    runs-on: windows-latest
+    needs: test-linux
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -r requirements.txt pyinstaller pytest
+      - name: Tests on Windows
+        run: python -m pytest -q
+      - name: Build exe
+        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name WplaceBot --hidden-import wplace_bot.gui run.py
+      - name: Self-test exe
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath dist\WplaceBot.exe -ArgumentList "--selftest" -Wait -PassThru
+          Get-Content dist\logs\*.log
+          if ($p.ExitCode -ne 0) { throw "selftest failed: $($p.ExitCode)" }
+      - name: Upload exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: WplaceBot-exe
+          path: dist/WplaceBot.exe
+          if-no-files-found: error
+      - name: Release (only for tags v*)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/WplaceBot.exe

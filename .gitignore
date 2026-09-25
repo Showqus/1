@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+build/
+dist/
+*.spec
+logs/
+config.json
+config.json.*
+report_*.zip
+.venv/
